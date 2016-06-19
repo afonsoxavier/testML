@@ -1,0 +1,127 @@
+---
+title: "First_RF"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+###Use Caret library
+
+
+```{r}
+library(caret) # load caret
+```
+
+### Load data 
+
+```{r}
+data <-read.csv("pml-training.csv" )
+```
+
+
+
+### Summarize data 
+```{r}
+# summary(data)   # summaries
+# str(data)
+
+```
+
+
+### features visualization through exploratory plots
+```{r}
+
+variables<-length(data)
+# par(mfrow=c(5,4),mar=c(2,2,2,1))
+# for (variable in 4:variables){
+#  plot(data$classe, data[,variable], main=variable)  
+#  }
+
+# Show examples
+for (variable in 80:84){
+  plot(data$classe, data[,variable])
+}
+```
+
+
+### Select features and limit observations so we still can use our not so slow laptop
+
+
+```{r}
+# train<-data.frame(data[,-c(1,2)])  #intended to remove index and make model subject independent
+train<-data.frame(data[,c(10,19,21,25,28,63,66,83,93,94,104,107,122,135,138,143,149,160)])
+train<-na.omit(train)   # complete cases only
+```
+
+
+### split train set into training and test, keep validation apart #
+
+```{r}
+inTrain<-createDataPartition(y=train$classe, p=0.8, list=FALSE)
+training<-train[inTrain,]
+testing<-train[-inTrain,]
+# dim(training)
+# dim(testing)
+# table(training$classe)
+# table(testing$classe)
+```
+
+
+
+### train using random forests model
+
+```{r}
+set.seed(350)
+
+modelFit <- train(classe ~ .,data=training, method="rf", trControl=trainControl(method="cv"),number=20)
+```
+
+
+
+### show results and metrics to evaluate model
+
+```{r}
+modelFit
+modelFit$finalModel # show final model
+```
+
+
+### Test predictions 
+
+```{r}
+predictions<- predict(modelFit,newdata=testing)
+
+table(predictions, testing$classe)  # check against test data
+
+```
+
+
+
+### Validation #
+
+```{r}
+data_val <-read.csv("pml-training.csv" )
+val<-data.frame(data_val)
+val<-na.omit(val)    #  only complete cases are considered
+predictions_val<- predict(modelFit, newdata = val)
+results<- table(predictions_val, val$classe)  # check against validation data
+
+```
+
+
+
+### Evaluation
+
+```{r}
+
+confusionMatrix(predictions_val,val$classe)
+
+```
+
+## Conclusions
+
+### Good: Results with random forests show accuracy and specifity > 90% for all classes, no need to combine predictors.
+### Bad: Only complete cases considered
+### Future work list: preprocess for covariating variables 
+
+
